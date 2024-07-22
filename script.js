@@ -1,8 +1,23 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-analytics.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, getDoc, addDoc, query, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-const auth = getAuth();
-const db = getFirestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyBTDeioxx6a3uoc3JFpTqAZZyUz21ijqTA",
+  authDomain: "marketinghangman.firebaseapp.com",
+  databaseURL: "https://marketinghangman-default-rtdb.firebaseio.com",
+  projectId: "marketinghangman",
+  storageBucket: "marketinghangman.appspot.com",
+  messagingSenderId: "573435667095",
+  appId: "1:573435667095:web:68cf56ccb05aa3d34ebfd2",
+  measurementId: "G-YPKXCHXZCX"
+};
+
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // 마케팅 용어 목록
 const words = {
@@ -143,8 +158,6 @@ function initGame() {
     hintCount = 0;
     gameCount++;
     
-    console.log('New game started. Selected word:', selectedWord);
-
     updateDisplay();
     resetUI();
 
@@ -168,8 +181,6 @@ function updateDisplay() {
     guessesElement.textContent = `남은 기회: ${remainingGuesses}`;
     wrongLettersElement.textContent = `틀린 글자: ${wrongLetters.join(', ')}`;
     updateHangman();
-
-    console.log('Display updated. Current word:', displayedWord);
 }
 
 function updateHangman() {
@@ -181,8 +192,6 @@ function updateHangman() {
 function makeGuess() {
     const guess = guessInput.value.toLowerCase();
     if (!isValidGuess(guess)) return;
-    
-    console.log('Guessing:', guess);
 
     if (selectedWord.toLowerCase().includes(guess)) {
         let foundNewLetter = false;
@@ -236,9 +245,6 @@ function revealNextLetter() {
 }
 
 function checkGameStatus() {
-    console.log('Checking game status. Current word:', displayedWord);
-    console.log('Selected word:', selectedWord);
-
     if (displayedWord === selectedWord) {
         endGame('승리');
     } else if (remainingGuesses === 0) {
@@ -285,14 +291,13 @@ function closeModals() {
 
 function signup(event) {
     event.preventDefault();
-    console.log('Signup function called');
     const name = document.getElementById('signup-name').value;
     const email = document.getElementById('signup-email').value;
     const password = document.getElementById('signup-password').value;
     const passwordConfirm = document.getElementById('signup-password-confirm').value;
 
     if (password !== passwordConfirm) {
-        alert('비밀번호가 일치하지 않습니다.');
+        showError('비밀번호가 일치하지 않습니다.');
         return;
     }
 
@@ -307,12 +312,12 @@ function signup(event) {
         .then(() => {
             currentUser = { name, email };
             closeModals();
-            alert('회원가입이 완료되었습니다.');
+            showMessage('회원가입이 완료되었습니다.');
             updateUIForUser();
         })
         .catch((error) => {
             console.error('Signup error:', error);
-            alert('회원가입 중 오류가 발생했습니다: ' + error.message);
+            showError('회원가입 중 오류가 발생했습니다: ' + error.message);
         });
 }
 
@@ -330,13 +335,13 @@ function login(event) {
             if (docSnap.exists()) {
                 currentUser = { name: docSnap.data().name, email: docSnap.data().email };
                 closeModals();
-                alert('로그인되었습니다.');
+                showMessage('로그인되었습니다.');
                 updateUIForUser();
             }
         })
         .catch((error) => {
             console.error('Login error:', error);
-            alert('로그인 중 오류가 발생했습니다: ' + error.message);
+            showError('로그인 중 오류가 발생했습니다: ' + error.message);
         });
 }
 
@@ -344,10 +349,10 @@ function logout() {
     signOut(auth).then(() => {
         currentUser = null;
         updateUIForUser();
-        alert('로그아웃되었습니다.');
+        showMessage('로그아웃되었습니다.');
     }).catch((error) => {
         console.error('Logout error:', error);
-        alert('로그아웃 중 오류가 발생했습니다.');
+        showError('로그아웃 중 오류가 발생했습니다.');
     });
 }
 
@@ -375,6 +380,7 @@ function addToLeaderboard(user, score) {
     })
     .catch((error) => {
         console.error("Error updating leaderboard: ", error);
+        showError("랭킹 업데이트 중 오류가 발생했습니다.");
     });
 }
 
@@ -392,7 +398,19 @@ function updateLeaderboard() {
         })
         .catch((error) => {
             console.error("Error fetching leaderboard: ", error);
+            showError("랭킹 정보를 가져오는 중 오류가 발생했습니다.");
         });
+}
+
+function showError(message) {
+    const errorModal = document.getElementById('error-modal');
+    const errorMessage = document.getElementById('error-message');
+    errorMessage.textContent = message;
+    errorModal.style.display = 'block';
+}
+
+function showMessage(message) {
+    alert(message);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -405,8 +423,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     showExplanationButton.addEventListener('click', showExplanation);
     joinRankingButton.addEventListener('click', showSignupModal);
-    document.getElementById('signup-button').addEventListener('click', signup);
-    document.getElementById('login-button').addEventListener('click', login);
+    document.getElementById('signup-form').addEventListener('submit', signup);
+    document.getElementById('login-form').addEventListener('submit', login);
     document.getElementById('join-ranking-yes').addEventListener('click', function() {
         closeModals();
         showSignupModal();
@@ -445,8 +463,4 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         updateUIForUser();
     }
-<<<<<<< HEAD:script.txt
 });
-=======
-});
->>>>>>> ff46db0 (Initial commit):script.js

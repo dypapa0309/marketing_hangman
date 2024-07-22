@@ -15,9 +15,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const auth = getAuth(app);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // 마케팅 용어 목록
 const words = {
@@ -414,6 +413,7 @@ function showMessage(message) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
     guessButton.addEventListener('click', makeGuess);
     newGameButton.addEventListener('click', initGame);
     guessInput.addEventListener('keypress', function(e) {

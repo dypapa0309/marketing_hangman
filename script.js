@@ -445,4 +445,8 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         updateUIForUser();
     }
+<<<<<<< HEAD:script.txt
 });
+=======
+});
+>>>>>>> ff46db0 (Initial commit):script.js

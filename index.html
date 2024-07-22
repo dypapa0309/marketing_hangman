@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마케팅 용어 행맨 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        #hangman-drawing {
+            margin-bottom: 20px;
+        }
+        #word-display {
+            font-size: 24px;
+            margin: 20px 0;
+            letter-spacing: 5px;
+        }
+        input, button {
+            font-size: 18px;
+            margin: 5px;
+        }
+        #message {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .hangman-part {
+            display: none;
+        }
+        #guess-input {
+            width: 30px;
+            text-align: center;
+        }
+        #word-explanation {
+            margin-top: 20px;
+            display: none;
+            text-align: left;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>마케팅 용어 행맨 게임</h1>
+        <div id="hangman-drawing">
+            <svg width="200" height="200">
+                <line x1="40" y1="10" x2="140" y2="10" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="140" y1="10" x2="140" y2="40" class="hangman-part" stroke="black" stroke-width="2"/>
+                <circle cx="140" cy="60" r="20" class="hangman-part" stroke="black" stroke-width="2" fill="none"/>
+                <line x1="140" y1="80" x2="140" y2="130" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="140" y1="90" x2="120" y2="120" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="140" y1="90" x2="160" y2="120" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="140" y1="130" x2="120" y2="160" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="140" y1="130" x2="160" y2="160" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="130" y1="55" x2="150" y2="55" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="130" y1="55" x2="130" y2="60" class="hangman-part" stroke="black" stroke-width="2"/>
+                <line x1="150" y1="55" x2="150" y2="60" class="hangman-part" stroke="black" stroke-width="2"/>
+            </svg>
+        </div>
+        <div id="word-display"></div>
+        <div id="guesses"></div>
+        <div id="wrong-letters"></div>
+        <input type="text" id="guess-input" maxlength="1">
+        <button id="guess-button">추측하기</button>
+        <button id="new-game-button">새 게임 시작</button>
+        <p id="message"></p>
+        <button id="show-explanation" style="display: none;">단어 설명 보기</button>
+        <div id="word-explanation"></div>
+    </div>
+    <script>
+        const words = {
+            '브랜딩': '제품이나 서비스의 독특한 정체성을 만들고 유지하는 과정',
+            '마케팅': '고객의 필요와 욕구를 파악하고 충족시키는 활동',
+            '광고': '제품이나 서비스를 홍보하기 위한 유료 커뮤니케이션',
+            '프로모션': '제품이나 서비스의 판매를 촉진하기 위한 다양한 활동',
+            '세일즈': '제품이나 서비스를 고객에게 직접 판매하는 활동',
+            '퍼널': '고객이 제품을 구매하기까지의 단계적 과정',
+            '리드': '잠재 고객의 정보와 관심',
+            '컨버전': '방문자가 목표한 행동을 완료하는 것',
+            '타겟팅': '특정 고객 그룹을 대상으로 마케팅 활동을 집중하는 것',
+            '인플루언서': '소셜 미디어에서 영향력 있는 개인',
+            'SEO': '검색 엔진 최적화',
+            'PPC': '클릭당 지불 광고',
+            'CTA': '행동 유도 문구',
+            'ROI': '투자 수익률',
+            'KPI': '핵심 성과 지표',
+            'CRM': '고객 관계 관리',
+            '바이럴': '입소문을 통해 빠르게 확산되는 마케팅 방식',
+            '콘텐츠': '사용자에게 가치를 제공하는 정보나 경험',
+            '리타겟팅': '이전에 관심을 보인 고객을 대상으로 다시 마케팅하는 것',
+            '퍼포먼스': '성과 중심의 마케팅 활동',
+            // ... (나머지 80개의 단어와 설명을 추가)
+        };
+
+        let selectedWord = '';
+        let displayedWord = '';
+        let guessedLetters = [];
+        let wrongLetters = [];
+        let remainingGuesses = 10;
+        let revealedLetters = 0;
+        let hintCount = 0;
+        const maxGuesses = 10;
+
+        const wordDisplayElement = document.getElementById('word-display');
+        const guessesElement = document.getElementById('guesses');
+        const wrongLettersElement = document.getElementById('wrong-letters');
+        const guessInput = document.getElementById('guess-input');
+        const guessButton = document.getElementById('guess-button');
+        const messageElement = document.getElementById('message');
+        const newGameButton = document.getElementById('new-game-button');
+        const hangmanParts = document.querySelectorAll('.hangman-part');
+        const showExplanationButton = document.getElementById('show-explanation');
+        const wordExplanationElement = document.getElementById('word-explanation');
+
+        function initGame() {
+            const wordKeys = Object.keys(words);
+            selectedWord = wordKeys[Math.floor(Math.random() * wordKeys.length)];
+            displayedWord = '_'.repeat(selectedWord.length);
+            guessedLetters = [];
+            wrongLetters = [];
+            remainingGuesses = maxGuesses;
+            revealedLetters = 0;
+            hintCount = 0;
+            
+            updateDisplay();
+            resetUI();
+        }
+
+        function resetUI() {
+            guessButton.disabled = false;
+            guessInput.disabled = false;
+            guessInput.value = '';
+            messageElement.textContent = '';
+            hangmanParts.forEach(part => part.style.display = 'none');
+            showExplanationButton.style.display = 'none';
+            wordExplanationElement.style.display = 'none';
+        }
+
+        function updateDisplay() {
+            wordDisplayElement.textContent = displayedWord.split('').join(' ');
+            guessesElement.textContent = `남은 기회: ${remainingGuesses}`;
+            wrongLettersElement.textContent = `틀린 글자: ${wrongLetters.join(', ')}`;
+            updateHangman();
+        }
+
+        function updateHangman() {
+            hangmanParts.forEach((part, index) => {
+                part.style.display = index < maxGuesses - remainingGuesses ? 'block' : 'none';
+            });
+        }
+
+        function revealNextLetter() {
+            if (revealedLetters < selectedWord.length) {
+                displayedWord = selectedWord.slice(0, revealedLetters + 1) + 
+                                displayedWord.slice(revealedLetters + 1);
+                revealedLetters++;
+                updateDisplay();
+            }
+        }
+
+        function makeGuess() {
+            const guess = guessInput.value.toLowerCase();
+            if (!isValidGuess(guess)) return;
+            
+            if (selectedWord.toLowerCase().includes(guess)) {
+                for (let i = 0; i < selectedWord.length; i++) {
+                    if (selectedWord[i].toLowerCase() === guess) {
+                        displayedWord = displayedWord.substr(0, i) + selectedWord[i] + displayedWord.substr(i + 1);
+                    }
+                }
+                messageElement.textContent = '정답입니다!';
+            } else {
+                wrongLetters.push(guess);
+                remainingGuesses--;
+                hintCount++;
+                messageElement.textContent = '틀렸습니다!';
+                
+                if (hintCount % 3 === 0) {
+                    revealNextLetter();
+                }
+            }
+            
+            updateDisplay();
+            checkGameStatus();
+            guessInput.value = '';
+        }
+
+        function isValidGuess(guess) {
+            if (guess.length !== 1) {
+                messageElement.textContent = '한 글자만 입력해주세요.';
+                return false;
+            }
+            if (guessedLetters.includes(guess) || wrongLetters.includes(guess)) {
+                messageElement.textContent = '이미 추측한 글자입니다.';
+                return false;
+            }
+            return true;
+        }
+
+        function checkGameStatus() {
+            if (displayedWord.toLowerCase() === selectedWord.toLowerCase()) {
+                endGame('승리');
+            } else if (remainingGuesses === 0) {
+                endGame('패배');
+            }
+        }
+
+        function endGame(result) {
+            guessInput.disabled = true;
+            guessButton.disabled = true;
+            if (result === '승리') {
+                messageElement.textContent = '축하합니다! 단어를 맞추셨습니다!';
+            } else {
+                messageElement.textContent = `게임 오버! 정답은 "${selectedWord}"입니다.`;
+            }
+            showExplanationButton.style.display = 'inline-block';
+        }
+
+        function showExplanation() {
+            wordExplanationElement.textContent = words[selectedWord];
+            wordExplanationElement.style.display = 'block';
+        }
+
+        guessButton.addEventListener('click', makeGuess);
+        newGameButton.addEventListener('click', initGame);
+        guessInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                makeGuess();
+            }
+        });
+        showExplanationButton.addEventListener('click', showExplanation);
+
+        initGame();
+    </script>
+</body>
+</html>
